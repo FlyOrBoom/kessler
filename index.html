@@ -13,13 +13,13 @@ html,body{
 }
 body{
   background:#000;
+  font-family:monospace,monospace;
+  font-size:1.5rem;
   cursor:url(cursor/white/up-blank.svg),auto;
-  overflow-y:scroll;
   color:#fff;
-  font-family:raleway,sans-serif;
-  letter-spacing:.1rem;
-  font-weight:400;
-  font-size:2rem;
+}
+a{
+  color:#fff;
 }
 #logo-wrapper{
   position:absolute;
@@ -42,6 +42,7 @@ body{
   width:100vw;
   height:100vh;
   pointer-events:none;
+  visibility:hidden;
 }
 #cursor{
   position:absolute;
@@ -79,7 +80,13 @@ body{
     </style>
   </head>
   <body>
-    <svg aria-hidden='true' id='logo-wrapper' viewBox='0 100 1800 1900' stroke-linecap='round' stroke-linejoin='round' fill='none' stroke='#fff' aria-label='15303 Space Rocks'>
+    <span id='intro'>
+      WASD to move. Space to shoot.
+      <p>This is a toroidal universe. You have infinite shots, but use them wisely.</p>
+      <p style='color:#888'>Made by <a href='https://xyzt.design/'>XYZt</a>. Tinker with the code <a href='https://github.com/FlyOrBoom/spacejunk/'>here</a>.</p>
+      <p>Click the octahedron to begin.</p>
+    </span>
+    <svg id='logo-wrapper' viewBox='0 100 1800 1900' stroke-linecap='round' stroke-linejoin='round' fill='none' stroke='#fff'>
       <g id='wire' onclick='doc.body.requestPointerLock();doc.body.requestFullscreen()' onmouseover='wire.speed=10' onmouseout='wire.speed=1'>
         <path id='wirex' d='
         M900 500l500 500l-500 500l-500 -500z
@@ -94,25 +101,6 @@ body{
         M900 500l100 400l-100 600l-100 -400z
         '/>
       </g>
-      <path id='logo' d='
-  M682.5 667.5l-150 -150v50v-50z
-  M707.5 642.5l100 -100l-50 -100l-125 125l-75 -75l150 -150
-  M832.5 517.5l50 -50v-150l-100 100l100 -100v-150l-150 150
-  M917.5 467.5l82.5 82.5l100 -200l-182.5 -182.5z
-  M1025 575l100 100l75 -75l-125 -125l125 125l75 -75l-150 -150
-  
-  M450 1100l-75 -75l-75 75l75 75l-75 75l-75 -75
-  M475 1125l-150 150l150 -150l75 75l-75 75l-75 -75
-  M632.5 1267.5h-100l-107.5 107.5l77.5 -75l100 100l-75 75l107.5 -107.5v-100
-  M775 1425l-75 -75l-150 150l75 75
-  M875 1525l-75 -75l-75 75l50 50l-50 -50l-75 75l75 75
-  
-  M925 1525l150 150l-150 -150l75 -75l75 75l-75 75h150
-  M1125 1325l-100 100l150 150l100 -100z
-  M1225 1225l-75 75l150 150l75 -75
-  M1250 1200l150 150l-75 -75h150h-150v-150
-  M1425 1025l-75 75l75 75l75 -75l75 75l-75 75
-      '/>
     </svg>
     <svg id='arcade'>
       <g id='cursor' stroke-width='.5rem'>
@@ -130,6 +118,7 @@ Number.prototype.toRad = function() {
 };
 const doc = document,
       logoWrapper = doc.getElementById('logo-wrapper'),
+      intro = doc.getElementById('intro'),
       wire = [doc.getElementById('wire0'),doc.getElementById('wire1'),doc.getElementById('wire2')],
       bulletWrapper = doc.getElementById('bullet-wrapper'),
       cursor = doc.getElementById('cursor'),
@@ -166,6 +155,8 @@ function angleChange(input){
 }
 function enterGame(){
   logoWrapper.style.visibility='hidden';
+  intro.style.visibility='hidden';
+  arcade.style.visibility='visible';
   arcade.maxX = window.innerWidth;
   arcade.maxY = window.innerHeight
   arcade.setAttribute('viewBox',('0 0 '+arcade.maxX+' '+arcade.maxY));
