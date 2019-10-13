@@ -41,19 +41,10 @@ a{
 }
 #arcade{
   position:absolute;
-  top:0;
-  left:0;
-  width:100vw;
-  height:100vh;
   pointer-events:none;
-  visibility:hidden;
+  cursor:none;
 }
 #ship{
-  position:absolute;
-  left:0;
-  top:0;
-  width:32px;
-  height:32px;
   transform-origin:8.883px 14.8px;
 }
 .hitAsteroid{
@@ -74,7 +65,7 @@ a{
       <p>Click the octahedron to begin.</p>
     </span>
     <svg id='logo-wrapper' viewBox='0 100 1800 1900' stroke-linecap='round' stroke-linejoin='round' fill='none' stroke='#fff'>
-      <g id='wire' onclick='doc.body.requestPointerLock();doc.body.requestFullscreen()' onmouseover='wire.speed=10' onmouseout='wire.speed=1'>
+      <g id='wire' onclick='doc.body.requestFullscreen()' onmouseover='wire.speed=10' onmouseout='wire.speed=1'>
         <path id='wirex' d='
         M900 500l500 500l-500 500l-500 -500z
         '/>
@@ -127,9 +118,9 @@ wire.time = Date.now();
 wire.speed = 1;
 
 let proto;
-doc.addEventListener('pointerlockchange',function(){
-  if(doc.pointerLockElement===doc.body){
-    enterGame();
+doc.addEventListener('fullscreenchange',function(){
+  if(doc.fullscreenElement){
+    gameStart();
   }else{
     gameOver();
   }
@@ -142,12 +133,16 @@ function angleChange(input){
     ship.angle+=Math.max(input/8,-8);
   }
 }
-function enterGame(){
+function gameStart(){
   logoWrapper.style.visibility='hidden';
   intro.style.visibility='hidden';
   arcade.style.visibility='visible';
   arcade.maxX = window.innerWidth;
-  arcade.maxY = window.innerHeight
+  arcade.maxY = window.innerHeight;
+  arcade.width= arcade.maxX+'px';
+  arcade.height = arcade.maxY+'px';
+  arcade.style.left =0;
+  arcade.style.top =0;
   arcade.setAttribute('viewBox',('0 0 '+arcade.maxX+' '+arcade.maxY));
   ship.posX = arcade.maxX/2;
   ship.posY = arcade.maxY/2;
@@ -208,7 +203,6 @@ function collision(){
 }
 function gameOver(message){
   doc.body.style.backgroundColor='#fff';
-  doc.exitPointerLock();
   doc.exitFullscreen();
   if(message){
     death.innerHTML = message;
@@ -269,7 +263,7 @@ function gameAnim(){
     ship.posY=arcade.maxY;
   }
   
-  ship.style.transform='translate('+(ship.posX)+'px,'+(ship.posY)+'px) rotate('+(-ship.angle+120)+'deg)';
+  ship.setAttribute('transform','translate('+(ship.posX)+','+(ship.posY)+') rotate('+(-ship.angle+120)+')');
   
   if(go){
     window.requestAnimationFrame(gameAnim);
