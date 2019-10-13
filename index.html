@@ -54,27 +54,10 @@ a{
   top:0;
   width:32px;
   height:32px;
-  transform-origin:44.415px 74px;
-}
-#asteroids{
-  left:0;
-  top:0;
-  width:100vmax;
-  height:100vmax;
-  display:none;
+  transform-origin:8.883px 14.8px;
 }
 .hitAsteroid{
   animation:.1s hitAsteroid forwards;
-}
-#up{
-  left:0;
-  position:fixed;
-  width:calc(10vw - 10vmin);
-  height:100vh;
-  ship:url(ship/white/up.svg),auto;
-}
-.day #up{
-  ship:url(ship/gray/up.svg),pointer;
 }
 @keyframes hitAsteroid{
   0%{fill:#fff}
@@ -107,12 +90,12 @@ a{
       </g>
     </svg>
     <span id='death' style='color:#000'>Sorry. Fullscreen only.</span>
-    <svg id='arcade'>
-      <g id='ship' stroke-width='.5rem'>
-        <path d='M107.923 64L4 4v120L44.415 74z' fill='none' stroke='#fff'/>
-        <path id='flame' d='M32 87L69.415 126L60 70L44.415 74' fill='#fff'/>
+    <svg id='arcade' stroke-width='.1rem'>
+      <g id='ship'>
+        <path d='M21.58 12.8L.8 .8V24.8L8.883 14.8z' fill='none' stroke='#fff'/>
+        <path id='flame' d='M6.4 17.4L13.883 25.2L12 14L8.883 14.8' fill='#fff'/>
       </g>
-      <g id='asteroids' fill='none' stroke='#fff' stroke-width='0.1rem'>
+      <g id='asteroids' fill='none' stroke='#fff'>
       </g>
       <g id='bullet-wrapper' fill='#fff'>
       </g>
@@ -235,10 +218,10 @@ function gameOver(message){
 function bulletAnim(){
   let initElapse = Date.now() - time;
   bullet.forEach(function(e,f){
-    for(let elapse = initElapse;elapse < (initElapse+10);elapse+=0.01){
+    for(let elapse = initElapse;elapse < (initElapse+10);elapse+=0.1){
       ship.rect = ship.getBoundingClientRect();
-      e.posX+=((elapse*Math.cos(e.angle)+e.vX)/3000);
-      e.posY-=((elapse*Math.sin(e.angle)-e.vY)/3000);
+      e.posX+=((elapse*Math.cos(e.angle)+e.vX)/300);
+      e.posY-=((elapse*Math.sin(e.angle)-e.vY)/300);
       if(inside([e.posX,e.posY],proto.pathcoords)){
         collision();
         e.setAttribute('cx','-10000');
@@ -286,7 +269,7 @@ function gameAnim(){
     ship.posY=arcade.maxY;
   }
   
-  ship.style.transform='translate('+(ship.posX-44.415)+'px,'+(ship.posY-74)+'px) rotate('+(-ship.angle+120)+'deg) scale(0.2)';
+  ship.style.transform='translate('+(ship.posX)+'px,'+(ship.posY)+'px) rotate('+(-ship.angle+120)+'deg)';
   
   if(go){
     window.requestAnimationFrame(gameAnim);
