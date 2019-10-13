@@ -183,8 +183,8 @@ function gameStart(){
 function shoot(){
   let proto = doc.createElementNS('http://www.w3.org/2000/svg','circle');
   proto.angle = ship.angle.toRad();
-  proto.startX = ship.posX+18*Math.cos(proto.angle);
-  proto.startY = ship.posY-19*Math.sin(proto.angle);
+  proto.startX = ship.posX+18*Math.cos(proto.angle)+9;
+  proto.startY = ship.posY-20*Math.sin(proto.angle)+15;
   proto.posX = proto.startX;
   proto.posY = proto.startY;
   proto.setAttribute('r','.1rem');
