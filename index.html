@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang='en-us'>
   <head>
-    <title>Space Junk</title>
+    <title>Kessler</title>
     <meta charset='utf-8'>
-    <meta name='description' content='A game of Asteroids turned Kessler.'>
+    <meta name='description' content='A lone spaceship trapped in a toroidal universe.'>
     <meta name='keywords' content='space,asteroids,game'>
     <meta name='viewpoint' content='width=device-width, initial-scale=1'>
     <link rel='shortcut icon' href='fav.png'>
@@ -244,7 +244,7 @@ function bulletAnim(){
         e.setAttribute('cx','-10000');
         bullet.splice(f,1);
       }
-      if(inside([e.posX+20,e.posY+50],[[ship.rect.left,ship.rect.top],[ship.rect.right,ship.rect.top],[ship.rect.left,ship.rect.bottom],[ship.rect.right,ship.rect.bottom]])){
+      if(inside([e.posX,e.posY],[[ship.rect.left,ship.rect.top],[ship.rect.right,ship.rect.top],[ship.rect.left,ship.rect.bottom],[ship.rect.right,ship.rect.bottom]])){
         gameOver('Collided with debris. Oxygen tank punctured. Game over.');
       }
     }
