@@ -235,17 +235,17 @@ function gameOver(message){
 function bulletAnim(){
   let initElapse = Date.now() - time;
   bullet.forEach(function(e,f){
-    for(let elapse = initElapse;elapse < (initElapse+10);elapse+=0.1){
+    for(let elapse = initElapse;elapse < (initElapse+10);elapse+=0.01){
       ship.rect = ship.getBoundingClientRect();
-      e.posX+=((elapse*Math.cos(e.angle)+e.vX)/300);
-      e.posY-=((elapse*Math.sin(e.angle)-e.vY)/300);
+      e.posX+=((elapse*Math.cos(e.angle)+e.vX)/3000);
+      e.posY-=((elapse*Math.sin(e.angle)-e.vY)/3000);
       if(inside([e.posX,e.posY],proto.pathcoords)){
         collision();
         e.setAttribute('cx','-10000');
         bullet.splice(f,1);
       }
       if(inside([e.posX,e.posY],[[ship.rect.left,ship.rect.top],[ship.rect.right,ship.rect.top],[ship.rect.left,ship.rect.bottom],[ship.rect.right,ship.rect.bottom]])){
-        gameOver('Collided with debris. Oxygen tank punctured. Game over.');
+        gameOver('Collided with bullet. Oxygen tank punctured. Game over.');
       }
     }
     if(e.posX>arcade.maxX){
