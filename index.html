@@ -12,11 +12,13 @@ html,body{
   margin:0;
   width:100vw;
   height:100vh;
+  overflow:hidden;
 }
 html{
   background-color:#000;
 }
 body{
+  padding:1rem;
   font-family:monospace,monospace;
   font-size:1.5rem;
   ship:url(ship/white/up-blank.svg),auto;
@@ -35,9 +37,6 @@ a{
 }
 #logo-wrapper{
   stroke-width:.4rem;
-}
-#wirex{
-  pointer-events:all;
 }
 #arcade{
   position:absolute;
@@ -63,26 +62,11 @@ a{
       WASD to move. Space to shoot.
       <p>This is a toroidal universe. You have infinite shots, but use them wisely.</p>
       <p style='color:#888'>Made by <a href='https://xyzt.design/'>XYZt</a>. Tinker with the code <a href='https://github.com/FlyOrBoom/spacejunk/'>here</a>.</p>
-      <p>Click the octahedron to begin.</p>
+      <p><button onclick='doc.body.requestFullscreen()'>Enter game.</button></p>
     </span>
-    <svg id='logo-wrapper' viewBox='0 100 1800 1900' stroke-linecap='round' stroke-linejoin='round' fill='none' stroke='#fff'>
-      <g id='wire' onclick='doc.body.requestFullscreen()' onmouseover='wire.speed=10' onmouseout='wire.speed=1'>
-        <path id='wirex' d='
-        M900 500l500 500l-500 500l-500 -500z
-        '/>
-        <path id='wire0' d='
-        M900 500l500 500l-500 500l-500 -500z
-        '/>
-        <path id='wire1' d='
-        M400 1000l600 -100l400 100l-600 100z
-        '/>
-        <path id='wire2' d='
-        M900 500l100 400l-100 600l-100 -400z
-        '/>
-      </g>
-    </svg>
     <span id='death' style='color:#000'>Sorry. Fullscreen only.</span>
     <svg id='arcade' stroke-width='.1rem'>
+      <!--<rect width='100%' height='100%' fill='#f00'/>-->
       <g id='ship'>
         <path d='M21.58 12.8L.8 .8V24.8L8.883 14.8z' fill='none' stroke='#fff'/>
         <path id='flame' d='M6.4 17.4L13.883 25.2L12 14L8.883 14.8' fill='#fff'/>
@@ -100,26 +84,19 @@ Array.prototype.last = function() {
   return this[this.length - 1];
 }
 const doc = document,
-      logoWrapper = doc.getElementById('logo-wrapper'),
       intro = doc.getElementById('intro'),
-      wire = [doc.getElementById('wire0'),doc.getElementById('wire1'),doc.getElementById('wire2')],
       bulletWrapper = doc.getElementById('bullet-wrapper'),
       asteroidWrapper = doc.getElementById('asteroid-wrapper'),
       death = doc.getElementById('death'),
       ship = doc.getElementById('ship'),
       flame = doc.getElementById('flame');
 let animateTick = 0,bullet=[],asteroid=[],go=true,score=0;
-splashAnim();
 
 let time = new Date();
 time = time.getHours();
 if(time>=6&&time<18){
   doc.body.classList.add('day');
 }
-
-wire.tick = 0;
-wire.time = Date.now();
-wire.speed = 1;
 
 doc.addEventListener('fullscreenchange',function(){
   if(doc.fullscreenElement){
@@ -137,7 +114,6 @@ function angleChange(input){
   }
 }
 function gameStart(){
-  logoWrapper.style.visibility='hidden';
   intro.style.visibility='hidden';
   arcade.style.visibility='visible';
   arcade.maxX = window.outerWidth;
@@ -280,43 +256,6 @@ function gameAnim(){
     window.requestAnimationFrame(gameAnim);
   }
 }
-function splashAnim(){
-  wire.tick += (Date.now() - wire.time)/8000*wire.speed;
-  wire.time = Date.now();
-  wire.center = [900,1000];
-
-  wire.deviY = Math.sin(wire.tick/4-50)*100;
-  wire[0].setAttribute('d',
-  'M900 550'+
-  'L'+(Math.cos(wire.tick)*450+wire.center[0])+
-  ' '+(Math.sin(wire.tick)*wire.deviY+wire.center[1])+
-  'L900 1450'+
-  'L'+(Math.cos(wire.tick+Math.PI)*450+wire.center[0])+
-  ' '+(Math.sin(wire.tick+Math.PI)*wire.deviY+wire.center[1])+
-  'z'
-  );
-  wire[1].setAttribute('d',
-  'M'+(Math.cos(wire.tick)*450+wire.center[0])+
-  ' '+(Math.sin(wire.tick)*wire.deviY+wire.center[1])+
-  'L'+(Math.cos(wire.tick+Math.PI/2)*450+wire.center[0])+
-  ' '+(Math.sin(wire.tick+Math.PI/2)*wire.deviY+wire.center[1])+
-  'L'+(Math.cos(wire.tick+Math.PI)*450+wire.center[0])+
-  ' '+(Math.sin(wire.tick+Math.PI)*wire.deviY+wire.center[1])+
-  'L'+(Math.cos(wire.tick+Math.PI*1.5)*450+wire.center[0])+
-  ' '+(Math.sin(wire.tick+Math.PI*1.5)*wire.deviY+wire.center[1])+
-  'z'
-  );
-  wire[2].setAttribute('d',
-  'M900 550'+
-  'L'+(Math.cos(wire.tick+Math.PI/2)*450+wire.center[0])+
-  ' '+(Math.sin(wire.tick+Math.PI/2)*wire.deviY+wire.center[1])+
-  'L900 1450'+
-  'L'+(Math.cos(wire.tick+Math.PI*1.5)*450+wire.center[0])+
-  ' '+(Math.sin(wire.tick+Math.PI*1.5)*wire.deviY+wire.center[1])+
-  'z'
-  );
-  window.requestAnimationFrame(splashAnim);
-}
 function addAsteroid(){
   let proto = doc.createElementNS('http://www.w3.org/2000/svg','path');
   proto.posX=arcade.maxX*Math.random();
@@ -348,10 +287,7 @@ function addAsteroid(){
 function inside(point, vs) {
   // ray-casting algorithm based on
   // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-
-  let x = point[0], y = point[1];
-
-  let inside = false;
+  let x = point[0], y = point[1], inside = false;
   for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
     let xi = vs[i][0], yi = vs[i][1];
     let xj = vs[j][0], yj = vs[j][1];
@@ -360,7 +296,6 @@ function inside(point, vs) {
         && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
     if (intersect) inside = !inside;
   }
-
   return inside;
 }
     </script>
