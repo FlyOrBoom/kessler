@@ -55,6 +55,26 @@ a{
   99%{opacity:0;fill:#fff}
   100%{opacity:0}
 }
+#death{
+  color:#000;
+  visibility:hidden;
+}
+#death>button{
+  filter:invert(1);
+}
+button{
+  border:.1rem solid #fff;
+  font-family:inherit;
+  font-size:inherit;
+  color:#fff;
+  background:#000;
+  cursor:pointer;
+}
+button:hover,button:focus{
+  border-color:#000;
+  color:#000;
+  background:#fff;
+}
     </style>
   </head>
   <body>
@@ -62,9 +82,12 @@ a{
       WASD to move. Space to shoot.
       <p>This is a toroidal universe. You have infinite shots, but use them wisely.</p>
       <p style='color:#888'>Made by <a href='https://xyzt.design/'>XYZt</a>. Tinker with the code <a href='https://github.com/FlyOrBoom/spacejunk/'>here</a>.</p>
-      <p><button onclick='doc.body.requestFullscreen()'>Enter game.</button></p>
+      <p><button onclick='doc.body.requestFullscreen()'>Enter game</button></p>
     </span>
-    <span id='death' style='color:#000'>Sorry. Fullscreen only.</span>
+    <span id='death'>
+      <p id='death-message'>Sorry. Fullscreen only.</p>
+      <button onclick='window.location.reload()'>Restart</button>
+    </span>
     <svg id='arcade' stroke-width='.1rem'>
       <!--<rect width='100%' height='100%' fill='#f00'/>-->
       <g id='ship'>
@@ -88,16 +111,15 @@ const doc = document,
       bulletWrapper = doc.getElementById('bullet-wrapper'),
       asteroidWrapper = doc.getElementById('asteroid-wrapper'),
       death = doc.getElementById('death'),
+      deathMessage = doc.getElementById('death-message'),
       ship = doc.getElementById('ship'),
       flame = doc.getElementById('flame');
 let animateTick = 0,bullet=[],asteroid=[],go=true,score=0;
-
 let time = new Date();
 time = time.getHours();
 if(time>=6&&time<18){
   doc.body.classList.add('day');
 }
-
 doc.addEventListener('fullscreenchange',function(){
   if(doc.fullscreenElement){
     gameStart();
@@ -105,7 +127,6 @@ doc.addEventListener('fullscreenchange',function(){
     gameOver();
   }
 });
-
 function angleChange(input){
   if(input>0){
     ship.angle+=Math.min(input/8,8);
@@ -184,12 +205,13 @@ function collision(){
 function gameOver(message){
   doc.body.style.backgroundColor='#fff';
   doc.exitFullscreen();
+  death.style.visibility='visible';
   if(message){
-    death.innerHTML = message+' You scored '+score+' point';
+    deathMessage.innerHTML = message+' You scored '+score+' point';
     if(score!==1){
-      death.innerHTML += 's'
+      deathMessage.innerHTML += 's'
     }
-    death.innerHTML += '.'
+    deathMessage.innerHTML += '.'
   }
   go=false;
 }
@@ -291,7 +313,6 @@ function inside(point, vs) {
   for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
     let xi = vs[i][0], yi = vs[i][1];
     let xj = vs[j][0], yj = vs[j][1];
-
     let intersect = ((yi > y) != (yj > y))
         && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
     if (intersect) inside = !inside;
