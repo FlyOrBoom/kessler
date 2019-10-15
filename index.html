@@ -25,6 +25,9 @@ body{
   color:#fff;
 }
 a{
+  color:#bbb;
+}
+a:hover{
   color:#fff;
 }
 #logo-wrapper{
@@ -75,6 +78,12 @@ button:hover,button:focus{
   color:#000;
   background:#fff;
 }
+#counter{
+  position:fixed;
+  right:1rem;
+  top:1rem;
+  text-align:right;
+}
     </style>
   </head>
   <body>
@@ -87,6 +96,10 @@ button:hover,button:focus{
     <span id='death'>
       <p id='death-message'>Sorry. Fullscreen only.</p>
       <button onclick='window.location.reload()'>Restart</button>
+    </span>
+    <span id='counter'>
+      <div>Asteroids annilated: <span id='score-counter'>0</span></div>
+      <div>Stray bullets: <span id='bullet-counter'>0</span></div>
     </span>
     <svg id='arcade' stroke-width='.1rem'>
       <!--<rect width='100%' height='100%' fill='#f00'/>-->
@@ -111,10 +124,21 @@ const doc = document,
       bulletWrapper = doc.getElementById('bullet-wrapper'),
       asteroidWrapper = doc.getElementById('asteroid-wrapper'),
       death = doc.getElementById('death'),
+      scoreCounter = doc.getElementById('score-counter'),
+      bulletCounter = doc.getElementById('bullet-counter'),
       deathMessage = doc.getElementById('death-message'),
       ship = doc.getElementById('ship'),
       flame = doc.getElementById('flame');
-let animateTick = 0,bullet=[],asteroid=[],go=true,score=0;
+let animateTick = 0,
+    bullet=[],
+    asteroid=[],
+    go=true,
+    score=0,
+    action={
+      rotateLeft:false,
+      rotateRight:false,
+      forward:false
+    };
 let time = new Date();
 time = time.getHours();
 if(time>=6&&time<18){
@@ -158,21 +182,35 @@ function gameStart(){
   bulletAnim();
   doc.onkeydown=function(e){
     if(e.code==='ArrowLeft'||e.code==='KeyA'){
-      ship.vR+=.2;
+      action.rotateLeft=true;
     }else if(e.code==='ArrowRight'||e.code==='KeyD'){
-      ship.vR-=.2;
+      action.rotateRight=true;
     }else if(e.code==='KeyW'||e.code==='ArrowUp'){
-      ship.vY-=(.1*Math.sin(ship.angle.toRad()));
-      ship.vX+=(.1*Math.cos(ship.angle.toRad()));
+      action.forward=true;
       flame.style.visibility='visible';
     }
   };
+  setInterval(function(){
+    if(action.rotateLeft){
+      ship.vR+=.02;
+    }else if(action.rotateRight){
+      ship.vR-=.02;
+    }else if(action.forward){
+      ship.vY-=(.01*Math.sin(ship.angle.toRad()));
+      ship.vX+=(.01*Math.cos(ship.angle.toRad()));
+    }
+  });
   doc.onwheel = function(e){angleChange(e.deltaY);};
   doc.onkeyup = function(e){
     if(e.code==='Space'||e.code==='KeyS'||e.code==='ArrowDown'){
       shoot();
     }
     flame.style.visibility='hidden';
+    action={
+      rotateLeft:false,
+      rotateRight:false,
+      forward:false
+    };
   };
   doc.onmousedown = function(){
     shoot();
@@ -195,9 +233,11 @@ function shoot(){
   proto.vY = ship.vY;
   proto.startT = Date.now();
   bullet.push(proto);
+  bulletCounter.innerHTML = bullet.length;
 }
 function collision(){
   score++;
+  scoreCounter.innerHTML = score;
   asteroid[0].classList.add('hitAsteroid');
   asteroid.pop();
   addAsteroid();
@@ -226,6 +266,7 @@ function bulletAnim(){
         collision();
         e.setAttribute('cx','-10000');
         bullet.splice(f,1);
+        bulletCounter.innerHTML = bullet.length;
       }
       if((e.posX-ship.posX)**2+(e.posY-ship.posY)**2<1000&&inside([e.posX,e.posY],[[ship.rect.left,ship.rect.top],[ship.rect.right,ship.rect.top],[ship.rect.left,ship.rect.bottom],[ship.rect.right,ship.rect.bottom]])){
         gameOver('Collided with bullet. Oxygen tank punctured. Game over.');
@@ -256,7 +297,7 @@ function gameAnim(){
     gameOver('Hull torn apart by centrifugal force. Game over.');
   }
   
-  ship.vR*=0.99; //for noobs
+  // ship.vR*=0.99; //for noobs
   ship.angle+=ship.vR;
   ship.posX+=ship.vX;
   ship.posY+=ship.vY;
