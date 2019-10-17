@@ -46,10 +46,11 @@ a:hover{
   pointer-events:none;
   ship:none;
   visibility:hidden;
-  left:0;
-  top:0;
-  width:100vw;
-  height:100vh;
+  width:100vmax;
+  height:100vmax;
+  left:calc(50vw - 50vmax);
+  top:calc(50vh - 50vmax);
+  filter:drop-shadow(0 0 3 #fff);
 }
 #ship-template-transform{
   transform-origin:8.883px 14.8px;
@@ -95,7 +96,7 @@ button:hover,button:focus{
   top:0;
   width:100vw;
   height:100vh;
-  backdrop-filter:blur(1vmin) brightness(.5);
+  backdrop-filter:blur(1px) brightness(.5);
   -webkit-mask-image:radial-gradient(circle,#0000,#fff);
   pointer-events:none;
   visibility:hidden;
@@ -107,13 +108,13 @@ button:hover,button:focus{
       WASD to move. Space to shoot.
       <p>This is a toroidal universe. You have infinite shots, but use them wisely.</p>
       <p style='color:#888'>Made by <a href='https://xyzt.design/'>XYZt</a>. Tinker with the code <a href='https://github.com/FlyOrBoom/spacejunk/'>here</a>.</p>
-      <button onclick='doc.body.requestFullscreen()'>Enter game</button>
+      <button onclick='gameStart()'>Enter game</button>
     </span>
     <span id='death'>
       <p id='death-message'>Sorry. Fullscreen only.</p>
       <button onclick='window.location.reload()'>Restart</button>
     </span>
-    <svg id='arcade' stroke-width='.1rem' fill='#fff' stroke='#fff'>
+    <svg id='arcade' stroke-width='.1rem' fill='#fff' stroke='#fff' viewBox='0 0 2000 2000'>
       <!--<rect width='100%' height='100%' fill='#0f0'/>-->
       <!--<rect width='100vmin' x='calc(50vw - 50vmin)' height='100vmin' fill='#f00'/>-->
       <symbol id='ship-template' overflow='visible'>
@@ -124,17 +125,25 @@ button:hover,button:focus{
       </symbol>
       <symbol id='bullet-template' overflow='visible' stroke='none'>
         <circle r='.1rem'/>
-        <circle r='.1rem' style='transform:translate(-90vmin,0)'/>
-        <circle r='.1rem' style='transform:translate(90vmin,0)'/>
-        <circle r='.1rem' style='transform:translate(0,-90vmin)'/>
-        <circle r='.1rem' style='transform:translate(0,90vmin)'/>
+        <circle r='.1rem' transform='translate(-1000,-1000)'/>
+        <circle r='.1rem' transform='translate(-1000,0)'/>
+        <circle r='.1rem' transform='translate(-1000,1000)'/>
+        <circle r='.1rem' transform='translate(1000,-1000)'/>
+        <circle r='.1rem' transform='translate(1000,0)'/>
+        <circle r='.1rem' transform='translate(1000,1000)'/>
+        <circle r='.1rem' transform='translate(0,-1000)'/>
+        <circle r='.1rem' transform='translate(0,1000)'/>
       </symbol>
       <g id='ship'>
-        <use href='#ship-template'/>
-        <use id='ship-clone-left' href='#ship-template' style='transform:translate(-90vmin,0)'/>
-        <use id='ship-clone-right' href='#ship-template' style='transform:translate(90vmin,0)'/>
-        <use id='ship-clone-top' href='#ship-template' style='transform:translate(0,-90vmin)'/>
-        <use id='ship-clone-bottom' href='#ship-template' style='transform:translate(0,90vmin)'/>
+        <g id='ship-main'><use href='#ship-template'/></g>
+        <use id='ship-clone-top-left' href='#ship-template' transform='translate(-1000,-1000)'/>
+        <use id='ship-clone-center-left' href='#ship-template' transform='translate(-1000,0)'/>
+        <use id='ship-clone-bottom-left' href='#ship-template' transform='translate(-1000,1000)'/>
+        <use id='ship-clone-top-right' href='#ship-template' transform='translate(1000,-1000)'/>
+        <use id='ship-clone-center-right' href='#ship-template' transform='translate(1000,0)'/>
+        <use id='ship-clone-bottom-right' href='#ship-template' transform='translate(1000,1000)'/>
+        <use id='ship-clone-top-center' href='#ship-template' transform='translate(0,-1000)'/>
+        <use id='ship-clone-bottom-center' href='#ship-template' transform='translate(0,1000)'/>
       </g>
       <g id='asteroid-wrapper' fill='none' stroke='#fff'>
       </g>
@@ -152,7 +161,7 @@ Number.prototype.toRad = function() {
 };
 Array.prototype.last = function() {
   return this[this.length - 1];
-}
+};
 const doc = document,
       intro = doc.getElementById('intro'),
       bulletWrapper = doc.getElementById('bullet-wrapper'),
@@ -162,6 +171,7 @@ const doc = document,
       scoreCounter = doc.getElementById('score-counter'),
       bulletCounter = doc.getElementById('bullet-counter'),
       deathMessage = doc.getElementById('death-message'),
+      arcade = doc.getElementById('arcade'),
       ship = doc.getElementById('ship'),
       flame = doc.getElementById('flame');
 let animateTick = 0,
@@ -174,19 +184,13 @@ let animateTick = 0,
       rotateRight:false,
       forward:false
     };
+ship.main = doc.getElementById('ship-main');
 ship.tt = doc.getElementById('ship-template-transform');
 let time = new Date();
 time = time.getHours();
 if(time>=6&&time<18){
   doc.body.classList.add('day');
 }
-doc.addEventListener('fullscreenchange',function(){
-  if(doc.fullscreenElement){
-    gameStart();
-  }else{
-    gameOver();
-  }
-});
 function angleChange(input){
   if(input>0){
     ship.angle+=Math.min(input/8,8);
@@ -198,16 +202,13 @@ function gameStart(){
   intro.style.visibility='hidden';
   arcade.style.visibility='visible';
   filter.style.visibility='visible';
-  arcade.fullX = window.outerWidth;
-  arcade.fullY = window.outerHeight;
-  arcade.max = 0.9*Math.min(arcade.fullX,arcade.fullY);
-  arcade.minX = (arcade.fullX - arcade.max)/2;
-  arcade.maxX = arcade.minX + arcade.max;
-  arcade.minY = (arcade.fullY - arcade.max)/2;
-  arcade.maxY = arcade.minY + arcade.max;
-  arcade.setAttribute('viewBox',('0 0 '+window.outerWidth+' '+window.outerHeight));
-  ship.posX = arcade.max/2;
-  ship.posY = arcade.max/2;
+  arcade.min = 500;
+  arcade.max = 1500;
+  arcade.center = 1000;
+  ship.posX = arcade.center;
+  ship.posY = arcade.center;
+  ship.cX = ship.posX + 8.883;
+  ship.cY = ship.posY + 14.8;
   doc.body.style.overflow='hidden';
   flame.style.visibility='hidden';
   ship.angle = 120;
@@ -255,13 +256,13 @@ function gameStart(){
   contentWrapper.style.display='none';
 }
 // setInterval(shoot,1);
-function shoot(){
+let shoot = function(){
   let proto = doc.createElementNS('http://www.w3.org/2000/svg','use');
   proto.setAttribute('href','#bullet-template');
   
   proto.angle = ship.angle.toRad();
-  proto.startX = ship.posX+20*Math.cos(proto.angle)+10;
-  proto.startY = ship.posY-21*Math.sin(proto.angle)+15;
+  proto.startX = ship.cX+20*Math.cos(proto.angle);
+  proto.startY = ship.cY-21*Math.sin(proto.angle);
   proto.posX = proto.startX;
   proto.posY = proto.startY;
   bulletWrapper.appendChild(proto);
@@ -285,14 +286,15 @@ function gameOver(message){
   filter.style.visibility='hidden';
   arcade.style.filter='invert(1)';
   shoot=null;
+  doc.onkeyup=null;
   doc.exitFullscreen();
   death.style.visibility='visible';
   if(message){
     deathMessage.innerHTML = message+' You scored '+score+' point';
     if(score!==1){
-      deathMessage.innerHTML += 's'
+      deathMessage.innerHTML += 's';
     }
-    deathMessage.innerHTML += '.'
+    deathMessage.innerHTML += '.';
   }
   go=false;
 }
@@ -300,7 +302,6 @@ function bulletAnim(){
   let initElapse = Date.now() - time;
   bullet.forEach(function(e,f){
     for(let elapse = initElapse;elapse < (initElapse+10);elapse+=0.1){
-      ship.rect = ship.childNodes[1].getBoundingClientRect();
       e.posX+=((elapse*Math.cos(e.angle)+e.vX)/300);
       e.posY-=((elapse*Math.sin(e.angle)-e.vY)/300);
       if((e.posX-asteroid[0].center[0])**2 + (e.posY-asteroid[0].center[1])**2<6400&&inside([e.posX,e.posY],asteroid[0].nodes)){
@@ -309,46 +310,51 @@ function bulletAnim(){
         bullet.splice(f,1);
         bulletCounter.innerHTML = bullet.length;
       }
-      if((e.posX-ship.posX)**2+(e.posY-ship.posY)**2<1000&&inside([e.posX,e.posY],[[ship.rect.left,ship.rect.top],[ship.rect.right,ship.rect.top],[ship.rect.left,ship.rect.bottom],[ship.rect.right,ship.rect.bottom]])){
+      if(insideCircle(e.posX,e.posY,ship.cX,ship.cY,15)){
         gameOver('Collided with bullet. Oxygen tank punctured. Game over.');
       }
     }
-  if(e.posX>arcade.maxX){
-    e.posX=arcade.minX;
-  }else if(e.posX<arcade.minX){
-    e.posX=arcade.maxX;
+  if(e.posX>arcade.max){
+    e.posX=arcade.min;
+  }else if(e.posX<arcade.min){
+    e.posX=arcade.max;
   }
-  if(e.posY>arcade.maxY){
-    e.posY=arcade.minY;
-  }else if(e.posY<arcade.minY){
-    e.posY=arcade.maxY;
+  if(e.posY>arcade.max){
+    e.posY=arcade.min;
+  }else if(e.posY<arcade.min){
+    e.posY=arcade.max;
   }
-    e.style.transform='translate('+e.posX+'px,'+e.posY+'px)';
+    e.setAttribute('transform','translate('+e.posX+','+e.posY+')');
   });
   time = Date.now();
 }
 function gameAnim(){
-  if(inside([ship.posX,ship.posY],asteroid[0].nodes)){
-    gameOver('Collided with asteroid. Hull damaged. Game over.');
-  }
   if(Math.abs(ship.vR)>50){
     gameOver('Hull torn apart by centrifugal force. Game over.');
   }
   
   // ship.vR*=0.99; //for noobs
-  ship.angle+=ship.vR;
-  ship.posX+=ship.vX;
-  ship.posY+=ship.vY;
-  
-  if(ship.posX>arcade.maxX){
-    ship.posX=arcade.minX;
-  }else if(ship.posX<arcade.minX){
-    ship.posX=arcade.maxX;
+  let initElapse = Date.now() - time;
+  for(let elapse = initElapse;elapse < (initElapse+10);elapse+=0.1){
+    ship.angle+=ship.vR/50;
+    ship.posX+=ship.vX/50;
+    ship.posY+=ship.vY/50;
+    if(inside([ship.posX,ship.posY],asteroid[0].nodes)){
+      gameOver('Collided with asteroid. Hull damaged. Game over.');
+    }
   }
-  if(ship.posY>arcade.maxY){
-    ship.posY=arcade.minY;
-  }else if(ship.posY<arcade.minY){
-    ship.posY=arcade.maxY;
+  ship.cX=ship.posX + 8.883;
+  ship.cY=ship.posY + 14.8;
+  
+  if(ship.posX>arcade.max){
+    ship.posX=arcade.min;
+  }else if(ship.posX<arcade.min){
+    ship.posX=arcade.max;
+  }
+  if(ship.posY>arcade.max){
+    ship.posY=arcade.min;
+  }else if(ship.posY<arcade.min){
+    ship.posY=arcade.max;
   }
   
   ship.setAttribute('transform','translate('+(ship.posX)+','+(ship.posY)+')');
@@ -362,8 +368,8 @@ function gameAnim(){
 }
 function addAsteroid(){
   let proto = doc.createElementNS('http://www.w3.org/2000/svg','path');
-  proto.posX=arcade.max*Math.random()+arcade.minX;
-  proto.posY=arcade.max*Math.random()+arcade.minY;
+  proto.posX=1000*Math.random()+arcade.min;
+  proto.posY=1000*Math.random()+arcade.min;
   proto.path='M'+proto.posX+' '+proto.posY+'L';
   proto.nodes=[[proto.posX,proto.posY]];
   for(let i = 0;i<20;i++){
@@ -385,7 +391,7 @@ function addAsteroid(){
   proto.setAttribute('d',proto.path);
   asteroid.push(proto);
   asteroidWrapper.appendChild(proto);
-  let boundingBox = asteroid[0].getBoundingClientRect();
+  let boundingBox = asteroid[0].getBBox();
   asteroid[0].center=[(boundingBox.x+boundingBox.width/2),(boundingBox.y+boundingBox.height/2)];
 }
 function inside(point, vs) {
@@ -400,6 +406,9 @@ function inside(point, vs) {
     if (intersect) inside = !inside;
   }
   return inside;
+}
+function insideCircle(px,py,cx,cy,r){
+  return (px-cx)**2+(py-cy)**2<r**2;
 }
     </script>
   </body>
