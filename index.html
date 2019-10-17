@@ -46,8 +46,12 @@ a:hover{
   pointer-events:none;
   ship:none;
   visibility:hidden;
+  left:0;
+  top:0;
+  width:100vw;
+  height:100vh;
 }
-#ship{
+#ship-template-transform{
   transform-origin:8.883px 14.8px;
 }
 .hitAsteroid{
@@ -83,6 +87,18 @@ button:hover,button:focus{
   right:1rem;
   top:1rem;
   text-align:right;
+  filter:blur(.1vmin) brightness(.5);
+}
+#filter{
+  position:fixed;
+  left:0;
+  top:0;
+  width:100vw;
+  height:100vh;
+  backdrop-filter:blur(1vmin) brightness(.5);
+  -webkit-mask-image:radial-gradient(circle,#0000,#fff);
+  pointer-events:none;
+  visibility:hidden;
 }
     </style>
   </head>
@@ -91,27 +107,45 @@ button:hover,button:focus{
       WASD to move. Space to shoot.
       <p>This is a toroidal universe. You have infinite shots, but use them wisely.</p>
       <p style='color:#888'>Made by <a href='https://xyzt.design/'>XYZt</a>. Tinker with the code <a href='https://github.com/FlyOrBoom/spacejunk/'>here</a>.</p>
-      <p><button onclick='doc.body.requestFullscreen()'>Enter game</button></p>
+      <button onclick='doc.body.requestFullscreen()'>Enter game</button>
     </span>
     <span id='death'>
       <p id='death-message'>Sorry. Fullscreen only.</p>
       <button onclick='window.location.reload()'>Restart</button>
     </span>
-    <span id='counter'>
-      <div>Asteroids annilated: <span id='score-counter'>0</span></div>
-      <div>Stray bullets: <span id='bullet-counter'>0</span></div>
-    </span>
-    <svg id='arcade' stroke-width='.1rem'>
-      <!--<rect width='100%' height='100%' fill='#f00'/>-->
+    <svg id='arcade' stroke-width='.1rem' fill='#fff' stroke='#fff'>
+      <!--<rect width='100%' height='100%' fill='#0f0'/>-->
+      <!--<rect width='100vmin' x='calc(50vw - 50vmin)' height='100vmin' fill='#f00'/>-->
+      <symbol id='ship-template' overflow='visible'>
+        <g id='ship-template-transform'>
+          <path d='M21.58 12.8L.8 .8V24.8L8.883 14.8z' fill='none'/>
+          <path id='flame' d='M6.4 17.4L13.883 25.2L12 14L8.883 14.8'/>
+        </g>
+      </symbol>
+      <symbol id='bullet-template' overflow='visible' stroke='none'>
+        <circle r='.1rem'/>
+        <circle r='.1rem' style='transform:translate(-90vmin,0)'/>
+        <circle r='.1rem' style='transform:translate(90vmin,0)'/>
+        <circle r='.1rem' style='transform:translate(0,-90vmin)'/>
+        <circle r='.1rem' style='transform:translate(0,90vmin)'/>
+      </symbol>
       <g id='ship'>
-        <path d='M21.58 12.8L.8 .8V24.8L8.883 14.8z' fill='none' stroke='#fff'/>
-        <path id='flame' d='M6.4 17.4L13.883 25.2L12 14L8.883 14.8' fill='#fff'/>
+        <use href='#ship-template'/>
+        <use id='ship-clone-left' href='#ship-template' style='transform:translate(-90vmin,0)'/>
+        <use id='ship-clone-right' href='#ship-template' style='transform:translate(90vmin,0)'/>
+        <use id='ship-clone-top' href='#ship-template' style='transform:translate(0,-90vmin)'/>
+        <use id='ship-clone-bottom' href='#ship-template' style='transform:translate(0,90vmin)'/>
       </g>
       <g id='asteroid-wrapper' fill='none' stroke='#fff'>
       </g>
       <g id='bullet-wrapper' fill='#fff'>
       </g>
     </svg>
+    <div id='filter'></div>
+    <span id='counter'>
+      <div>Asteroids annilated: <span id='score-counter'>0</span></div>
+      <div>Stray bullets: <span id='bullet-counter'>0</span></div>
+    </span>
     <script>
 Number.prototype.toRad = function() {
   return this*Math.PI / 180;
@@ -123,6 +157,7 @@ const doc = document,
       intro = doc.getElementById('intro'),
       bulletWrapper = doc.getElementById('bullet-wrapper'),
       asteroidWrapper = doc.getElementById('asteroid-wrapper'),
+      filter = doc.getElementById('filter'),
       death = doc.getElementById('death'),
       scoreCounter = doc.getElementById('score-counter'),
       bulletCounter = doc.getElementById('bullet-counter'),
@@ -139,6 +174,7 @@ let animateTick = 0,
       rotateRight:false,
       forward:false
     };
+ship.tt = doc.getElementById('ship-template-transform');
 let time = new Date();
 time = time.getHours();
 if(time>=6&&time<18){
@@ -161,15 +197,17 @@ function angleChange(input){
 function gameStart(){
   intro.style.visibility='hidden';
   arcade.style.visibility='visible';
-  arcade.maxX = window.outerWidth;
-  arcade.maxY = window.outerHeight;
-  arcade.width= arcade.maxX+'px';
-  arcade.height = arcade.maxY+'px';
-  arcade.style.left=0;
-  arcade.style.top=0;
-  arcade.setAttribute('viewBox',('0 0 '+arcade.maxX+' '+arcade.maxY));
-  ship.posX = arcade.maxX/2;
-  ship.posY = arcade.maxY/2;
+  filter.style.visibility='visible';
+  arcade.fullX = window.outerWidth;
+  arcade.fullY = window.outerHeight;
+  arcade.max = 0.9*Math.min(arcade.fullX,arcade.fullY);
+  arcade.minX = (arcade.fullX - arcade.max)/2;
+  arcade.maxX = arcade.minX + arcade.max;
+  arcade.minY = (arcade.fullY - arcade.max)/2;
+  arcade.maxY = arcade.minY + arcade.max;
+  arcade.setAttribute('viewBox',('0 0 '+window.outerWidth+' '+window.outerHeight));
+  ship.posX = arcade.max/2;
+  ship.posY = arcade.max/2;
   doc.body.style.overflow='hidden';
   flame.style.visibility='hidden';
   ship.angle = 120;
@@ -179,7 +217,6 @@ function gameStart(){
   addAsteroid();
   gameAnim();
   let time = Date.now();
-  bulletAnim();
   doc.onkeydown=function(e){
     if(e.code==='ArrowLeft'||e.code==='KeyA'){
       action.rotateLeft=true;
@@ -219,13 +256,14 @@ function gameStart(){
 }
 // setInterval(shoot,1);
 function shoot(){
-  let proto = doc.createElementNS('http://www.w3.org/2000/svg','circle');
+  let proto = doc.createElementNS('http://www.w3.org/2000/svg','use');
+  proto.setAttribute('href','#bullet-template');
+  
   proto.angle = ship.angle.toRad();
   proto.startX = ship.posX+20*Math.cos(proto.angle)+10;
   proto.startY = ship.posY-21*Math.sin(proto.angle)+15;
   proto.posX = proto.startX;
   proto.posY = proto.startY;
-  proto.setAttribute('r','.1rem');
   bulletWrapper.appendChild(proto);
   ship.vY+=(.02*Math.sin(ship.angle.toRad()));
   ship.vX-=(.02*Math.cos(ship.angle.toRad()));
@@ -244,6 +282,9 @@ function collision(){
 }
 function gameOver(message){
   doc.body.style.backgroundColor='#fff';
+  filter.style.visibility='hidden';
+  arcade.style.filter='invert(1)';
+  shoot=null;
   doc.exitFullscreen();
   death.style.visibility='visible';
   if(message){
@@ -259,12 +300,12 @@ function bulletAnim(){
   let initElapse = Date.now() - time;
   bullet.forEach(function(e,f){
     for(let elapse = initElapse;elapse < (initElapse+10);elapse+=0.1){
-      ship.rect = ship.getBoundingClientRect();
+      ship.rect = ship.childNodes[1].getBoundingClientRect();
       e.posX+=((elapse*Math.cos(e.angle)+e.vX)/300);
       e.posY-=((elapse*Math.sin(e.angle)-e.vY)/300);
       if((e.posX-asteroid[0].center[0])**2 + (e.posY-asteroid[0].center[1])**2<6400&&inside([e.posX,e.posY],asteroid[0].nodes)){
         collision();
-        e.setAttribute('cx','-10000');
+        e.setAttribute('x','-10000');
         bullet.splice(f,1);
         bulletCounter.innerHTML = bullet.length;
       }
@@ -272,22 +313,19 @@ function bulletAnim(){
         gameOver('Collided with bullet. Oxygen tank punctured. Game over.');
       }
     }
-    if(e.posX>arcade.maxX){
-      e.posX=0;
-    }else if(e.posX<0){
-      e.posX=arcade.maxX;
-    }
-    if(e.posY>arcade.maxY){
-      e.posY=0;
-    }else if(e.posY<0){
-      e.posY=arcade.maxY;
-    }
+  if(e.posX>arcade.maxX){
+    e.posX=arcade.minX;
+  }else if(e.posX<arcade.minX){
+    e.posX=arcade.maxX;
+  }
+  if(e.posY>arcade.maxY){
+    e.posY=arcade.minY;
+  }else if(e.posY<arcade.minY){
+    e.posY=arcade.maxY;
+  }
     e.style.transform='translate('+e.posX+'px,'+e.posY+'px)';
   });
   time = Date.now();
-  if(go){
-    window.requestAnimationFrame(bulletAnim);
-  }
 }
 function gameAnim(){
   if(inside([ship.posX,ship.posY],asteroid[0].nodes)){
@@ -303,17 +341,20 @@ function gameAnim(){
   ship.posY+=ship.vY;
   
   if(ship.posX>arcade.maxX){
-    ship.posX=0;
-  }else if(ship.posX<0){
+    ship.posX=arcade.minX;
+  }else if(ship.posX<arcade.minX){
     ship.posX=arcade.maxX;
   }
   if(ship.posY>arcade.maxY){
-    ship.posY=0;
-  }else if(ship.posY<0){
+    ship.posY=arcade.minY;
+  }else if(ship.posY<arcade.minY){
     ship.posY=arcade.maxY;
   }
   
-  ship.setAttribute('transform','translate('+(ship.posX)+','+(ship.posY)+') rotate('+(-ship.angle+120)+')');
+  ship.setAttribute('transform','translate('+(ship.posX)+','+(ship.posY)+')');
+  ship.tt.setAttribute('transform','rotate('+(-ship.angle+120)+')');
+  
+  bulletAnim();
   
   if(go){
     window.requestAnimationFrame(gameAnim);
@@ -321,8 +362,8 @@ function gameAnim(){
 }
 function addAsteroid(){
   let proto = doc.createElementNS('http://www.w3.org/2000/svg','path');
-  proto.posX=arcade.maxX*Math.random();
-  proto.posY=arcade.maxY*Math.random();
+  proto.posX=arcade.max*Math.random()+arcade.minX;
+  proto.posY=arcade.max*Math.random()+arcade.minY;
   proto.path='M'+proto.posX+' '+proto.posY+'L';
   proto.nodes=[[proto.posX,proto.posY]];
   for(let i = 0;i<20;i++){
